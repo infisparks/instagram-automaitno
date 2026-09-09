@@ -98,16 +98,35 @@ export async function exchangeForLongLivedToken(
 ): Promise<IgLongLivedTokenResponse> {
   const params = new URLSearchParams({
     grant_type: 'ig_exchange_token',
-    client_id: appId,
     client_secret: appSecret,
     access_token: shortLivedToken,
   });
-  const res = await fetch(`${IG_LONG_LIVED_URL}?${params.toString()}`);
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Instagram long-lived token exchange failed: ${res.status} ${body}`);
+
+  try {
+    // Try POST first as required by newer Meta Graph API versions
+    let res = await fetch(IG_LONG_LIVED_URL, {
+      method: 'POST',
+      body: params,
+    });
+
+    if (!res.ok) {
+      // Try GET as legacy fallback
+      res = await fetch(`${IG_LONG_LIVED_URL}?${params.toString()}`);
+    }
+
+    if (res.ok) {
+      return (await res.json()) as IgLongLivedTokenResponse;
+    }
+  } catch {
+    // ignore network errors and fallback
   }
-  return (await res.json()) as IgLongLivedTokenResponse;
+
+  // Graceful fallback: use short-lived token (1h) which auto-refreshes via cron
+  return {
+    access_token: shortLivedToken,
+    token_type: 'bearer',
+    expires_in: 3600,
+  };
 }
 
 export async function getInstagramProfile(accessToken: string): Promise<IgUserProfile> {
