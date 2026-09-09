@@ -11,6 +11,7 @@ import { useActiveAccount } from "@/hooks/useActiveAccount";
 import type { AutomationFromDB } from "@/hooks/useAutomations";
 import { AutomationDebugPanel } from "@/components/debug/AutomationDebugPanel";
 
+
 export default function AutomationsPage() {
     const [activeTab, setActiveTab] = useState<"automations" | "contacts">("automations");
     const [isModalOpen, setIsModalOpen] = useState(false);
